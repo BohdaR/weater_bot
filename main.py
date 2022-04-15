@@ -3,12 +3,9 @@ import requests
 import pandas
 from bs4 import BeautifulSoup
 
-URL = 'https://weather.com/uk-UA/weather/tenday/l/fbd9abfe47326bb176f53692f407ed025fc2916883a34ff763c16c8ba7b25f75'
-FILE_NAME = 'weather.json'
-
-
-def get_data(url):
-    headers = {
+DAILY_URL = 'https://weather.com/uk-UA/weather/tenday/l/fbd9abfe47326bb176f53692f407ed025fc2916883a34ff763c16c8ba7b25f75'
+HOURLY_URL = 'https://weather.com/uk-UA/weather/hourbyhour/l/fbd9abfe47326bb176f53692f407ed025fc2916883a34ff763c16c8ba7b25f75'
+HEADERS = {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,'
                   'application/signed-exchange;v=b3;q=0.9',
         'accept-encoding': 'gzip, deflate, br',
@@ -17,6 +14,10 @@ def get_data(url):
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                       'Chrome/100.0.4896.88 Safari/537.36 '
     }
+FILE_NAME = 'weather'
+
+
+def get_daily_data(url, headers):
     r = requests.get(url=url, headers=headers).text
     soup = BeautifulSoup(r, 'lxml')
     details = soup.find_all(class_='DetailsSummary--DetailsSummary--2HluQ DetailsSummary--fadeOnOpen--vFCc_')
@@ -38,17 +39,49 @@ def get_data(url):
     save_to_json(content=content, file_name=FILE_NAME)
 
 
-def save_to_json(content, file_name='rezult.json'):
-    with open(file_name, 'w', encoding='utf-8') as file:
+def get_hourly_data(url, headers):
+    r = requests.get(url=url, headers=headers).text
+    soup = BeautifulSoup(r, 'lxml')
+    details = soup.find_all('details', class_='DaypartDetails--DayPartDetail--1up3g')
+    days = soup.find_all('h2', class_='HourlyForecast--longDate--1tdaJ')
+    day = days[0].text
+    count = 0
+    content = []
+    for el in details:
+        hour = el.find('h3', class_='DetailsSummary--daypartName--2FBp2').text
+        temperature = el.find('span', class_='DetailsSummary--tempValue--1K4ka').text
+        sky = el.find('span', class_='DetailsSummary--extendedData--365A_').text
+        precipitation = el.find('span', {'data-testid': "PercentageValue"}).text,
+        wind = el.find('span', class_='Wind--windWrapper--3aqXJ').text
+        
+        if hour == '0:00':
+            count +=1
+            day = days[count].text
+
+        content.append({
+                'day': day,
+                'hour': hour,
+                'temperature': temperature,
+                'sky': sky,
+                'precipitation': precipitation[0],
+                'wind': wind,
+            })
+            
+    save_to_json(content=content, file_name='hourly')
+
+
+def save_to_json(content, file_name='rezult'):
+    with open(f'{file_name}.json', 'w', encoding='utf-8') as file:
         json.dump(content, file, indent=4, ensure_ascii=False)
 
     df = pandas.DataFrame.from_dict(content)
-    df.to_csv('./weather.csv')
-    # df.to_excel('./weather.xlsx')
+    df.to_csv(f'./{file_name}.csv')
+    # df.to_excel(f'./{file_name}.xlsx')
 
 
 def main():
-    get_data(URL)
+    get_daily_data(DAILY_URL, HEADERS)
+    get_hourly_data(HOURLY_URL, HEADERS)
 
 
 if __name__ == '__main__':
