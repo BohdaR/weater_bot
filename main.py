@@ -59,12 +59,12 @@ def get_hourly_data(url, headers):
             day = days[count].text
 
         content.append({
-                'day': day,
                 'hour': hour,
+                'precipitation': precipitation[0],
                 'temperature': temperature,
                 'sky': sky,
-                'precipitation': precipitation[0],
                 'wind': wind,
+                'day': day,
             })
             
     save_to_json(content=content, file_name='hourly')
