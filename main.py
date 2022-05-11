@@ -1,7 +1,10 @@
 import json
 import requests
 import pandas
+import pymysql
+import pymysql.cursors
 from bs4 import BeautifulSoup
+
 
 DAILY_URL = 'https://weather.com/uk-UA/weather/tenday/l/fbd9abfe47326bb176f53692f407ed025fc2916883a34ff763c16c8ba7b25f75'
 HOURLY_URL = 'https://weather.com/uk-UA/weather/hourbyhour/l/fbd9abfe47326bb176f53692f407ed025fc2916883a34ff763c16c8ba7b25f75'
@@ -80,6 +83,21 @@ def save_to_json(content, file_name='rezult'):
 
 
 def main():
+    try:
+        connection = pymysql.connect(
+            host="127.0.0.1",
+            port=3306,
+            user="BohdaR",
+            password='Bodya#08752',
+            database='test',
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        connection.autocommit(True)
+        
+    except Exception as ex:
+        print(ex)
+        return 1
+
     get_daily_data(DAILY_URL, HEADERS)
     get_hourly_data(HOURLY_URL, HEADERS)
 
